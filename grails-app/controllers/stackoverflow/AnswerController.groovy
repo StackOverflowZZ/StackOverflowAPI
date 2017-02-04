@@ -9,14 +9,11 @@ import grails.plugin.springsecurity.annotation.Secured
 class AnswerController {
 
     static allowedMethods = [save: "POST", update: "PUT", delete: "DELETE"]
+    static responseFormats = ['json', 'xml']
 
     @Secured(['ROLE_ANONYMOUS'])
     def show(Answer answer) {
         respond answer
-    }
-
-    def create() {
-        respond new Answer(params)
     }
 
     @Transactional
@@ -31,7 +28,7 @@ class AnswerController {
 
         if (answer == null) {
             transactionStatus.setRollbackOnly()
-            notFound()
+            render status: NOT_FOUND
             return
         }
 
@@ -45,13 +42,7 @@ class AnswerController {
 
         Badge.controlBadges((User)getAuthenticatedUser())?.save()
 
-        request.withFormat {
-            form multipartForm {
-                flash.message = message(code: 'default.created.message', args: [message(code: 'answer.label', default: 'Answer'), answer.id])
-                redirect controller: 'Question', action: 'show', id: answer.question.id
-            }
-            '*' { respond answer, [status: CREATED] }
-        }
+        respond answer, [status: CREATED]
     }
 
     @Transactional
@@ -76,20 +67,14 @@ class AnswerController {
 
         answer.save flush:true
 
-        request.withFormat {
-            form multipartForm {
-                flash.message = message(code: 'default.updated.message', args: [message(code: 'answer.label', default: 'Answer'), answer.id])
-                redirect controller: 'Question', action: 'show', id: answer.question.id
-            }
-            '*'{ respond answer, [status: OK] }
-        }
+        respond answer, [status: OK]
     }
 
     @Transactional
     def downVote(Answer answer) {
         if (answer == null) {
             transactionStatus.setRollbackOnly()
-            notFound()
+            render status: NOT_FOUND
             return
         }
 
@@ -106,21 +91,14 @@ class AnswerController {
         Badge.controlBadges(answer.user)
         answer.user.save flush:true
 
-
-        request.withFormat {
-            form multipartForm {
-                flash.message = message(code: 'default.updated.message', args: [message(code: 'answer.label', default: 'Answer'), answer.id])
-                redirect controller: 'Question', action: 'show', id: answer.question.id
-            }
-            '*'{ respond answer, [status: OK] }
-        }
+        respond answer, [status: OK]
     }
 
     @Transactional
     def updateText(Answer answer, String text) {
         if (answer == null) {
             transactionStatus.setRollbackOnly()
-            notFound()
+            render status: NOT_FOUND
             return
         }
 
@@ -134,13 +112,7 @@ class AnswerController {
         answer.edited = new Date()
         answer.save flush:true
 
-        request.withFormat {
-            form multipartForm {
-                flash.message = message(code: 'default.updated.message', args: [message(code: 'answer.label', default: 'Answer'), answer.id])
-                redirect controller: 'Question', action: 'show', id: answer.question.id
-            }
-            '*'{ respond answer, [status: OK] }
-        }
+        response answer, [status: OK]
     }
 
     @Transactional
@@ -148,7 +120,7 @@ class AnswerController {
 
         if (answer == null) {
             transactionStatus.setRollbackOnly()
-            notFound()
+            render status: NOT_FOUND
             return
         }
 
@@ -161,40 +133,7 @@ class AnswerController {
         answer.save()
         Badge.controlBadges(answer.user)?.save()
 
-        request.withFormat {
-            form multipartForm {
-                flash.message = message(code: 'default.created.message', args: [message(code: 'answer.label', default: 'Answer'), answer.id])
-                redirect answer
-            }
-            '*' { respond answer, [status: CREATED] }
-        }
-    }
-
-    def edit(Answer answer) {
-        respond answer
-    }
-
-    @Transactional
-    def update(Answer answer) {
-        if (answer == null) {
-            transactionStatus.setRollbackOnly()
-            notFound()
-            return
-        }
-
-        if (answer.hasErrors()) {
-            transactionStatus.setRollbackOnly()
-            respond answer.errors, view:'edit'
-            return
-        }
-
-        request.withFormat {
-            form multipartForm {
-                flash.message = message(code: 'default.updated.message', args: [message(code: 'answer.label', default: 'Answer'), answer.id])
-                redirect answer
-            }
-            '*'{ respond answer, [status: OK] }
-        }
+        respond answer, [status: OK]
     }
 
     @Transactional
@@ -202,29 +141,13 @@ class AnswerController {
 
         if (answer == null) {
             transactionStatus.setRollbackOnly()
-            notFound()
+            render status: NOT_FOUND
             return
         }
 
         def questionId = answer.question.id
         answer.delete flush:true
 
-        request.withFormat {
-            form multipartForm {
-                flash.message = message(code: 'default.deleted.message', args: [message(code: 'answer.label', default: 'Answer'), answer.id])
-                redirect controller: "question", action:"show", id: questionId, method:"GET"
-            }
-            '*'{ render status: NO_CONTENT }
-        }
-    }
-
-    protected void notFound() {
-        request.withFormat {
-            form multipartForm {
-                flash.message = message(code: 'default.not.found.message', args: [message(code: 'answer.label', default: 'Answer'), params.id])
-                redirect action: "index", method: "GET"
-            }
-            '*'{ render status: NOT_FOUND }
-        }
+        render status: NO_CONTENT
     }
 }

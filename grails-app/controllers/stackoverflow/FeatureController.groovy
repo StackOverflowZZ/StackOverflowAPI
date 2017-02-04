@@ -10,6 +10,7 @@ import grails.transaction.Transactional
 class FeatureController {
 
     static allowedMethods = [save: "POST", update: "PUT", delete: "DELETE"]
+    static responseFormats = ['json', 'xml']
 
     @Transactional
     def toggle(Feature feature) {

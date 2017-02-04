@@ -7,6 +7,7 @@ import grails.transaction.Transactional
 class BadgeController {
 
     static allowedMethods = [save: "POST", update: "PUT", delete: "DELETE"]
+    static responseFormats = ['json', 'xml']
 
     def index(Integer max) {
         params.max = Math.min(max ?: 10, 100)

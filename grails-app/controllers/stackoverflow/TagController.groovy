@@ -10,7 +10,7 @@ import grails.transaction.Transactional
 class TagController {
 
     static allowedMethods = [save: "POST", update: "PUT", delete: "DELETE"]
-
+    static responseFormats = ['json', 'xml']
 
     def show(Tag tag) {
         respond tag

@@ -9,6 +9,7 @@ import grails.plugin.springsecurity.annotation.Secured
 class QuestionController {
 
     static allowedMethods = [save: "POST", update: "PUT", delete: "DELETE"]
+    static responseFormats = ['json', 'xml']
 
     @Secured(['ROLE_ANONYMOUS'])
     def index(Integer max) {

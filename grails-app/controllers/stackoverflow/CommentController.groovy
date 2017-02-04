@@ -9,6 +9,7 @@ import grails.plugin.springsecurity.annotation.Secured
 class CommentController {
 
     static allowedMethods = [save: "POST", update: "PUT", delete: "DELETE"]
+    static responseFormats = ['json', 'xml']
 
     def show(Comment comment) {
         respond comment
