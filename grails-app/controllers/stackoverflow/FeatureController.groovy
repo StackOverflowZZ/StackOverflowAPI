@@ -9,7 +9,7 @@ import grails.transaction.Transactional
 @Transactional(readOnly = true)
 class FeatureController {
 
-    static allowedMethods = [save: "POST", update: "PUT", delete: "DELETE"]
+    static allowedMethods = [index:"GET", toggle: "PUT"]
     static responseFormats = ['json', 'xml']
 
     @Transactional

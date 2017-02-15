@@ -8,7 +8,8 @@ import grails.plugin.springsecurity.annotation.Secured
 @Transactional(readOnly = true)
 class QuestionController {
 
-    static allowedMethods = [save: "POST", update: "PUT", delete: "DELETE"]
+    static allowedMethods = [index:"GET", show:"GET", addQuestion: "POST", upVote: "PUT", downVote: "PUT",
+                             addView:"PUT", setResolved: "PUT", updateText: "PUT", delete: "DELETE"]
     static responseFormats = ['json', 'xml']
 
     @Secured(['ROLE_ANONYMOUS'])

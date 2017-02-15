@@ -1,0 +1,5 @@
+POST http://localhost:8080/api/login { "username":"me", "password":"password" }
+
+HEAD:
+Authorization : Bearer <token>
+{"title":"test","text":"test"}

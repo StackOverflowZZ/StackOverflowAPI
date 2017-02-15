@@ -9,7 +9,7 @@ import grails.transaction.Transactional
 @Secured(['ROLE_ANONYMOUS'])
 class TagController {
 
-    static allowedMethods = [save: "POST", update: "PUT", delete: "DELETE"]
+    static allowedMethods = [show: "GET"]
     static responseFormats = ['json', 'xml']
 
     def show(Tag tag) {

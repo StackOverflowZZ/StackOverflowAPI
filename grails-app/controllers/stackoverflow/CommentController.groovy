@@ -8,7 +8,7 @@ import grails.plugin.springsecurity.annotation.Secured
 @Transactional(readOnly = true)
 class CommentController {
 
-    static allowedMethods = [save: "POST", update: "PUT", delete: "DELETE"]
+    static allowedMethods = [show:"GET", addComment: "POST", upVote: "PUT", downVote: "PUT", updateText: "PUT", delete: "DELETE"]
     static responseFormats = ['json', 'xml']
 
     def show(Comment comment) {
