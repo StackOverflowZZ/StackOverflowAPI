@@ -13,31 +13,10 @@ class TagController {
     static responseFormats = ['json', 'xml']
 
     def show(Tag tag) {
-        respond tag
-    }
-
-    @Transactional
-    def save(Tag tag) {
-        if (tag == null) {
-            transactionStatus.setRollbackOnly()
-            notFound()
-            return
-        }
-
-        if (tag.hasErrors()) {
-            transactionStatus.setRollbackOnly()
-            respond tag.errors, view:'create'
-            return
-        }
-
-        tag.save flush:true
-
-        request.withFormat {
-            form multipartForm {
-                flash.message = message(code: 'default.created.message', args: [message(code: 'tag.label', default: 'Tag'), tag.id])
-                redirect tag
-            }
-            '*' { respond tag, [status: CREATED] }
+        if(Feature.findByName("Tag").getEnable()) {
+            respond tag
+        } else {
+            render status: SERVICE_UNAVAILABLE
         }
     }
 
