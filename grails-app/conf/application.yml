@@ -20,11 +20,14 @@ spring:
 
 # Spring Actuator Endpoints are Disabled by Default
 endpoints:
+    enabled: false
     jmx:
         enabled: true
 
 ---
 grails:
+    cors:
+        enabled: true
     mime:
         disable:
             accept:
