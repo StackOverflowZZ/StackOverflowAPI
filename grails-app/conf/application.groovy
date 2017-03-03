@@ -13,32 +13,41 @@ grails.plugin.springsecurity.rest.login.active=true
 grails.plugin.springsecurity.rest.login.endpointUrl='/api/login'
 grails.plugin.springsecurity.rest.login.failureStatusCode=401
 
+grails.plugin.springsecurity.filterChain.chainMap = [
+		[pattern: '/api/guest/**', filters: 'anonymousAuthenticationFilter,restTokenValidationFilter,restExceptionTranslationFilter,filterInvocationInterceptor'],
+		[pattern: '/**',       filters: 'JOINED_FILTERS,-anonymousAuthenticationFilter,-exceptionTranslationFilter,-authenticationProcessingFilter,-securityContextPersistenceFilter,-rememberMeAuthenticationFilter'],
+]
+
+grails.plugin.springsecurity.rest.token.validation.enableAnonymousAccess = true
+
 grails.plugin.springsecurity.roleHierarchy = '''
    ROLE_ADMIN > ROLE_USER
    ROLE_USER > ROLE_ANONYMOUS
 '''
+
 grails.plugin.springsecurity.controllerAnnotations.staticRules = [
-	[pattern: '/',               access: ['permitAll']],
-	[pattern: '/error',          access: ['permitAll']],
-	[pattern: '/health',          access: ['permitAll']],
-	[pattern: '/index',          access: ['permitAll']],
-	[pattern: '/shutdown',       access: ['permitAll']],
-	[pattern: '/assets/**',      access: ['permitAll']],
-	[pattern: '/**/favicon.ico', access: ['permitAll']],
-	[pattern: '/**/js/**',       access: ['permitAll']],
-	[pattern: '/**/css/**',      access: ['permitAll']],
-	[pattern: '/**/images/**',   access: ['permitAll']],
-	[pattern: '/**/fonts/**',	 access: ['permitAll']],
-	[pattern: '/user/**',        access: 'ROLE_ADMIN'],
-	[pattern: '/**/register',	 access: 'ROLE_ANONYMOUS']
+		[pattern: '/',               access: ['permitAll']],
+		[pattern: '/error',          access: ['permitAll']],
+		[pattern: '/health',         access: ['permitAll']],
+		[pattern: '/index',          access: ['permitAll']],
+		[pattern: '/shutdown',       access: ['permitAll']],
+		[pattern: '/assets/**',      access: ['permitAll']],
+		[pattern: '/**/favicon.ico', access: ['permitAll']],
+		[pattern: '/**/js/**',       access: ['permitAll']],
+		[pattern: '/**/css/**',      access: ['permitAll']],
+		[pattern: '/**/images/**',   access: ['permitAll']],
+		[pattern: '/**/fonts/**',	 access: ['permitAll']],
+		[pattern: '/user/**',        access: 'ROLE_ADMIN'],
+		[pattern: '/**/register',	 access: 'ROLE_ANONYMOUS']
 ]
 
-grails.plugin.springsecurity.filterChain.chainMap = [
-	[pattern: '/assets/**',      filters: 'JOINED_FILTERS,-exceptionTranslationFilter,-authenticationProcessingFilter,-securityContextPersistenceFilter,-rememberMeAuthenticationFilter'],
-	[pattern: '/**/js/**',       filters: 'JOINED_FILTERS,-exceptionTranslationFilter,-authenticationProcessingFilter,-securityContextPersistenceFilter,-rememberMeAuthenticationFilter'],
-	[pattern: '/**/css/**',      filters: 'JOINED_FILTERS,-exceptionTranslationFilter,-authenticationProcessingFilter,-securityContextPersistenceFilter,-rememberMeAuthenticationFilter'],
-	[pattern: '/**/images/**',   filters: 'JOINED_FILTERS,-exceptionTranslationFilter,-authenticationProcessingFilter,-securityContextPersistenceFilter,-rememberMeAuthenticationFilter'],
-    [pattern: '/**/fonts/**',   filters: 'JOINED_FILTERS,-exceptionTranslationFilter,-authenticationProcessingFilter,-securityContextPersistenceFilter,-rememberMeAuthenticationFilter'],
-	[pattern: '/**/favicon.ico', filters: 'JOINED_FILTERS,-exceptionTranslationFilter,-authenticationProcessingFilter,-securityContextPersistenceFilter,-rememberMeAuthenticationFilter'],
-	[pattern: '/**',             filters: 'JOINED_FILTERS,-exceptionTranslationFilter,-authenticationProcessingFilter,-securityContextPersistenceFilter,-rememberMeAuthenticationFilter']
-]
+//grails.plugin.springsecurity.filterChain.chainMap = [
+//	[pattern: '/assets/**',      filters: 'JOINED_FILTERS,-exceptionTranslationFilter,-authenticationProcessingFilter,-securityContextPersistenceFilter,-rememberMeAuthenticationFilter'],
+//	[pattern: '/**/js/**',       filters: 'JOINED_FILTERS,-exceptionTranslationFilter,-authenticationProcessingFilter,-securityContextPersistenceFilter,-rememberMeAuthenticationFilter'],
+//	[pattern: '/**/css/**',      filters: 'JOINED_FILTERS,-exceptionTranslationFilter,-authenticationProcessingFilter,-securityContextPersistenceFilter,-rememberMeAuthenticationFilter'],
+//	[pattern: '/**/images/**',   filters: 'JOINED_FILTERS,-exceptionTranslationFilter,-authenticationProcessingFilter,-securityContextPersistenceFilter,-rememberMeAuthenticationFilter'],
+//    [pattern: '/**/fonts/**',   filters: 'JOINED_FILTERS,-exceptionTranslationFilter,-authenticationProcessingFilter,-securityContextPersistenceFilter,-rememberMeAuthenticationFilter'],
+//	[pattern: '/**/favicon.ico', filters: 'JOINED_FILTERS,-exceptionTranslationFilter,-authenticationProcessingFilter,-securityContextPersistenceFilter,-rememberMeAuthenticationFilter'],
+//	[pattern: '/**',             filters: 'JOINED_FILTERS,-exceptionTranslationFilter,-authenticationProcessingFilter,-securityContextPersistenceFilter,-rememberMeAuthenticationFilter']
+//]
+
