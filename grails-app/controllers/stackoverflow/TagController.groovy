@@ -9,7 +9,7 @@ import grails.transaction.Transactional
 @Secured(['ROLE_ANONYMOUS'])
 class TagController {
 
-    static allowedMethods = [show: "GET", get: "GET"]
+    static allowedMethods = [show: "GET"]
     static responseFormats = ['json', 'xml']
 
     def show(Tag tag) {
@@ -18,14 +18,6 @@ class TagController {
         }
 
         respond tag
-    }
-
-    def get(Integer id){
-        if(!Feature.findByName("Tag").getEnable()) {
-            render status: SERVICE_UNAVAILABLE
-        }
-
-        respond Tag.findById(id)
     }
 
     protected void notFound() {

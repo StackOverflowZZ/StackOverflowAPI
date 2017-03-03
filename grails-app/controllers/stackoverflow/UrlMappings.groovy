@@ -9,6 +9,14 @@ class UrlMappings {
             }
         }
 
+        "/questions"(resources:'question')
+        "/answers"(resources:'answer')
+        "/comments"(resources:'comment')
+        "/tags"(resources:'tag')
+        "/badge"(resources:'badge')
+        "/feature"(resources:'feature')
+
         "/"(controller:'question')
+
     }
 }

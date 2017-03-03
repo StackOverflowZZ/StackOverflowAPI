@@ -8,7 +8,8 @@ import grails.plugin.springsecurity.annotation.Secured
 @Transactional(readOnly = true)
 class CommentController {
 
-    static allowedMethods = [show:"GET", get:"GET", addComment: "POST", upVote: "PUT", downVote: "PUT", updateText: "PUT", delete: "DELETE"]
+    static allowedMethods = [show:"GET", addComment: "POST", upVote: "PUT", downVote: "PUT",
+                             update: "PUT", updateText: "PUT", delete: "DELETE"]
     static responseFormats = ['json', 'xml']
 
     def show(Comment comment) {
@@ -17,13 +18,6 @@ class CommentController {
         }
 
         respond comment
-    }
-
-    def get(Integer id){
-        if(!Feature.findByName("Comment").getEnable()) {
-            render status: SERVICE_UNAVAILABLE
-        }
-        respond Comment.findById(id)
     }
 
     @Secured(['ROLE_USER'])
@@ -142,6 +136,37 @@ class CommentController {
                 redirect controller: 'Question', action: 'show', id: idQuestion
             }
             '*'{ respond comment, [status: OK] }
+        }
+    }
+
+    @Transactional
+    def update(Comment comment) {
+
+        if (!Feature.findByName("Comment").getEnable()) {
+            render status: SERVICE_UNAVAILABLE
+            return
+        }
+
+        if (comment == null) {
+            transactionStatus.setRollbackOnly()
+            notFound()
+            return
+        }
+
+        if (comment.hasErrors()) {
+            transactionStatus.setRollbackOnly()
+            respond comment.errors, view: 'edit'
+            return
+        }
+
+        comment.save flush: true
+
+        request.withFormat {
+            form multipartForm {
+                flash.message = message(code: 'default.updated.message', args: [message(code: 'comment.label', default: 'Comment'), comment.id])
+                redirect comment
+            }
+            '*' { respond comment, [status: OK] }
         }
     }
 

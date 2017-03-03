@@ -8,8 +8,8 @@ import grails.plugin.springsecurity.annotation.Secured
 @Transactional(readOnly = true)
 class QuestionController {
 
-    static allowedMethods = [index:"GET", get:"GET", show:"GET", addQuestion: "POST", upVote: "PUT", downVote: "PUT",
-                             addView:"PUT", setResolved: "PUT", updateText: "PUT", delete: "DELETE"]
+    static allowedMethods = [index:"GET", show:"GET", test:"GET", addQuestion: "POST", upVote: "PUT", downVote: "PUT",
+                             addView:"PUT", setResolved: "PUT", update: "PUT", updateText: "PUT", delete: "DELETE"]
     static responseFormats = ['json', 'xml']
 
     @Secured(['ROLE_ANONYMOUS'])
@@ -22,11 +22,12 @@ class QuestionController {
         respond Question.list(params), model:[questionCount: Question.count()]
     }
 
-    def get(Integer id){
+    def test(Question question) {
         if(!Feature.findByName("Question").getEnable()) {
             render status: SERVICE_UNAVAILABLE
         }
-        respond Question.findById(id)
+
+        respond question
     }
 
     @Secured(['ROLE_ANONYMOUS'])
@@ -208,6 +209,38 @@ class QuestionController {
             '*'{ respond question, [status: OK] }
         }
     }
+
+    @Transactional
+    def update(Question question) {
+
+        if(!Feature.findByName("Question").getEnable()) {
+            render status: SERVICE_UNAVAILABLE
+            return
+        }
+
+        if (question == null) {
+            transactionStatus.setRollbackOnly()
+            notFound()
+            return
+        }
+
+        if (question.hasErrors()) {
+            transactionStatus.setRollbackOnly()
+            respond question.errors, view:'edit'
+            return
+        }
+
+        question.save flush:true
+
+        request.withFormat {
+            form multipartForm {
+                flash.message = message(code: 'default.updated.message', args: [message(code: 'question.label', default: 'Question'), question.id])
+                redirect question
+            }
+            '*'{ respond question, [status: OK] }
+        }
+    }
+
 
     @Transactional
     def updateText(Question question, String title, String text) {

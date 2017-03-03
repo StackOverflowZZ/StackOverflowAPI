@@ -6,11 +6,11 @@ import grails.transaction.Transactional
 @Transactional(readOnly = true)
 class BadgeController {
 
-    static allowedMethods = [index: "GET", get:"GET"]
+    static allowedMethods = [index: "GET", show:"GET"]
     static responseFormats = ['json', 'xml']
 
-    def get(Integer id){
-        respond Badge.findById(id)
+    def show(Badge badge){
+        respond badge
     }
 
     def index(Integer max) {

@@ -8,7 +8,8 @@ import grails.plugin.springsecurity.annotation.Secured
 @Transactional(readOnly = true)
 class AnswerController {
 
-    static allowedMethods = [show:"GET", get:"GET", addAnswer: "POST", upVote: "PUT", downVote: "PUT", updateText: "PUT", delete: "DELETE"]
+    static allowedMethods = [show:"GET", addAnswer: "POST", upVote: "PUT", downVote: "PUT",
+                             update: "PUT", updateText: "PUT", delete: "DELETE"]
     static responseFormats = ['json', 'xml']
 
     @Secured(['ROLE_ANONYMOUS'])
@@ -17,13 +18,6 @@ class AnswerController {
             render status: SERVICE_UNAVAILABLE
         }
         respond answer
-    }
-
-    def get(Integer id){
-        if(!Feature.findByName("Answer").getEnable()) {
-            render status: SERVICE_UNAVAILABLE
-        }
-        respond Answer.findById(id)
     }
 
     @Transactional
@@ -114,6 +108,37 @@ class AnswerController {
         answer.user.save flush:true
 
         respond answer, [status: OK]
+    }
+
+    @Transactional
+    def update(Answer answer) {
+
+        if(!Feature.findByName("Answer").getEnable()) {
+            render status: SERVICE_UNAVAILABLE
+            return
+        }
+
+        if (answer == null) {
+            transactionStatus.setRollbackOnly()
+            notFound()
+            return
+        }
+
+        if (answer.hasErrors()) {
+            transactionStatus.setRollbackOnly()
+            respond answer.errors, view:'edit'
+            return
+        }
+
+        answer.save flush:true
+
+        request.withFormat {
+            form multipartForm {
+                flash.message = message(code: 'default.updated.message', args: [message(code: 'answer.label', default: 'Answer'), answer.id])
+                redirect answer
+            }
+            '*'{ respond answer, [status: OK] }
+        }
     }
 
     @Transactional
