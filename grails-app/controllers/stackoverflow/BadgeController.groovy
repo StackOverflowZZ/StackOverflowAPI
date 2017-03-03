@@ -6,8 +6,12 @@ import grails.transaction.Transactional
 @Transactional(readOnly = true)
 class BadgeController {
 
-    static allowedMethods = [index: "GET"]
+    static allowedMethods = [index: "GET", get:"GET"]
     static responseFormats = ['json', 'xml']
+
+    def get(Integer id){
+        respond Badge.findById(id)
+    }
 
     def index(Integer max) {
         params.max = Math.min(max ?: 10, 100)
