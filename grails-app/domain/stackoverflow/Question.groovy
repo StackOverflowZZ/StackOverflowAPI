@@ -1,5 +1,8 @@
 package stackoverflow
 
+import grails.rest.Resource
+
+@Resource(uri='/questions', formats=['json', 'xml'])
 class Question extends Post {
 
     String title

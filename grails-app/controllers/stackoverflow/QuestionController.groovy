@@ -1,16 +1,22 @@
 package stackoverflow
 
-import static org.springframework.http.HttpStatus.*
-import grails.transaction.Transactional
 import grails.plugin.springsecurity.annotation.Secured
+import grails.rest.RestfulController
+import grails.transaction.Transactional
+
+import static org.springframework.http.HttpStatus.*
 
 @Secured(['ROLE_USER'])
 @Transactional(readOnly = true)
-class QuestionController {
+class QuestionController extends RestfulController {
 
     static allowedMethods = [index:"GET", show:"GET", test:"GET", addQuestion: "POST", upVote: "PUT", downVote: "PUT",
                              addView:"PUT", setResolved: "PUT", update: "PUT", updateText: "PUT", delete: "DELETE"]
     static responseFormats = ['json', 'xml']
+
+    QuestionController() {
+        super(Question)
+    }
 
     @Secured(['ROLE_ANONYMOUS'])
     def index(Integer max) {
@@ -40,7 +46,7 @@ class QuestionController {
     }
 
     @Transactional
-    def addQuestion(){
+    def save(){
         if(!Feature.findByName("Question").getEnable()) {
             render status: SERVICE_UNAVAILABLE
         }
