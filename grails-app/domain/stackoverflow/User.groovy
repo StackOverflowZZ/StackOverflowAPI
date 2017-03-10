@@ -1,10 +1,12 @@
 package stackoverflow
 
+import grails.rest.Resource
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 
 @EqualsAndHashCode(includes='username')
 @ToString(includes='username', includeNames=true, includePackage=false)
+@Resource(uri='/user', formats=['json', 'xml'])
 class User implements Serializable {
 
 	static final int REPUTATION_COEF = 5

@@ -9,7 +9,8 @@ class UrlMappings {
             }
         }
 
-        "/question"(resources:'question'    )
+        "/question"(resources:'question')
+        "/user"(resources:'user')
         "/answer"(resources:'answer', excludes:['create','edit'])
         "/comment"(resources:'comment', excludes:['create','edit'])
 

@@ -16,6 +16,7 @@ class QuestionController extends RestfulController {
 
     static allowedMethods = [test:"GET", upVote: "PUT", downVote: "PUT",
                              addView:"PUT", setResolved: "PUT", updateText: "PUT"]
+
     static responseFormats = ['json', 'xml']
 
     QuestionController() {
@@ -24,7 +25,7 @@ class QuestionController extends RestfulController {
 
     // GET LIST
     @Secured(['ROLE_ANONYMOUS'])
-    def index(Integer max) {
+    index(Integer max) {
         if(!Feature.findByName("Question").getEnable()) {
             render status: SERVICE_UNAVAILABLE
         }
@@ -35,7 +36,7 @@ class QuestionController extends RestfulController {
 
     // GET ID
     @Secured(['ROLE_ANONYMOUS'])
-    def show() {
+    show() {
         if(!Feature.findByName("Question").getEnable()) {
             render status: SERVICE_UNAVAILABLE
         }
@@ -45,7 +46,7 @@ class QuestionController extends RestfulController {
 
     // POST : create question
     @Transactional
-    def save() {
+    save() {
 
         if(!Feature.findByName("Question").getEnable()) {
             render status: SERVICE_UNAVAILABLE
@@ -90,7 +91,7 @@ class QuestionController extends RestfulController {
 
     // PUT : edit question
     @Transactional
-    def update() {
+    update() {
 
         if(!Feature.findByName("Question").getEnable()) {
             render status: SERVICE_UNAVAILABLE
@@ -130,7 +131,7 @@ class QuestionController extends RestfulController {
 
     // DELETE : delete question
     @Transactional
-    def delete() {
+    delete() {
         if(!Feature.findByName("Question").getEnable()) {
             render status: SERVICE_UNAVAILABLE
         }
@@ -164,7 +165,7 @@ class QuestionController extends RestfulController {
     }
 
     @Transactional
-    def upVote() {
+    upVote() {
         if(!Feature.findByName("Question").getEnable()) {
             render status: SERVICE_UNAVAILABLE
             return
@@ -198,7 +199,7 @@ class QuestionController extends RestfulController {
     }
 
     @Transactional
-    def downVote() {
+    downVote() {
         if(!Feature.findByName("Question").getEnable()) {
             render status: SERVICE_UNAVAILABLE
             return
@@ -233,7 +234,7 @@ class QuestionController extends RestfulController {
 
     @Secured(['ROLE_ANONYMOUS'])
     @Transactional
-    def addView() {
+    addView() {
         if(!Feature.findByName("Question").getEnable()) {
             render status: SERVICE_UNAVAILABLE
             return
@@ -265,7 +266,7 @@ class QuestionController extends RestfulController {
     }
 
     @Transactional
-    def setResolved() {
+    setResolved() {
         if(!Feature.findByName("Question").getEnable()) {
             render status: SERVICE_UNAVAILABLE
             return
