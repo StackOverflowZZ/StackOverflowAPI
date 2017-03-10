@@ -9,9 +9,11 @@ class UrlMappings {
             }
         }
 
-        "/questions"(resources:'question')
-        "/answers"(resources:'answer')
-        "/comments"(resources:'comment')
+        "/questions"(resources:'question', excludes:['create','edit'])
+        "/answers"(resources:'answer', excludes:['create','edit'])
+        "/comments"(resources:'comment', excludes:['create','edit'])
+
+
         "/tags"(resources:'tag')
         "/badge"(resources:'badge')
         "/feature"(resources:'feature')
