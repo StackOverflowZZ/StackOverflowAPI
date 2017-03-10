@@ -3,21 +3,26 @@ package stackoverflow
 import grails.plugin.springsecurity.annotation.Secured
 import grails.rest.RestfulController
 import grails.transaction.Transactional
+import grails.web.http.HttpHeaders
 
-import static org.springframework.http.HttpStatus.*
+import static org.springframework.http.HttpStatus.CREATED
+import static org.springframework.http.HttpStatus.NOT_FOUND
+import static org.springframework.http.HttpStatus.NO_CONTENT
+import static org.springframework.http.HttpStatus.OK
 
 @Secured(['ROLE_USER'])
 @Transactional(readOnly = true)
 class QuestionController extends RestfulController {
 
-    static allowedMethods = [index:"GET", show:"GET", test:"GET", addQuestion: "POST", upVote: "PUT", downVote: "PUT",
-                             addView:"PUT", setResolved: "PUT", update: "PUT", updateText: "PUT", delete: "DELETE"]
+    static allowedMethods = [test:"GET", upVote: "PUT", downVote: "PUT",
+                             addView:"PUT", setResolved: "PUT", updateText: "PUT"]
     static responseFormats = ['json', 'xml']
 
     QuestionController() {
         super(Question)
     }
 
+    // GET LIST
     @Secured(['ROLE_ANONYMOUS'])
     def index(Integer max) {
         if(!Feature.findByName("Question").getEnable()) {
@@ -28,6 +33,128 @@ class QuestionController extends RestfulController {
         respond Question.list(params), model:[questionCount: Question.count()]
     }
 
+    // GET ID
+    @Secured(['ROLE_ANONYMOUS'])
+    def show() {
+        if(!Feature.findByName("Question").getEnable()) {
+            render status: SERVICE_UNAVAILABLE
+        }
+
+        respond queryForResource(params.id)
+    }
+
+    // POST : create question
+    @Transactional
+    def save() {
+
+        if(!Feature.findByName("Question").getEnable()) {
+            render status: SERVICE_UNAVAILABLE
+        }
+
+        // Create resource
+        def question = createResource()
+
+        // Assign defaults
+        question.resolved =  false
+        question.vote = 0
+        question.created = new Date()
+        question.user = (User)getAuthenticatedUser()
+
+        // Verify
+        if (question.hasErrors()) {
+            transactionStatus.setRollbackOnly()
+            respond question.errors, view:'create' // STATUS CODE 422
+            return
+        }
+
+        // Save
+        saveResource question
+
+        // Change badges
+        Badge.controlBadges(question.user)?.save()
+
+        // Send response
+        request.withFormat {
+            form multipartForm {
+                flash.message = message(code: 'default.created.message', args: [classMessageArg, question.id])
+                redirect question
+            }
+            '*' {
+                response.addHeader(HttpHeaders.LOCATION,
+                        grailsLinkGenerator.link( resource: this.controllerName, action: 'show',id: question.id, absolute: true,
+                                namespace: hasProperty('namespace') ? this.namespace : null ))
+                respond question, [status: CREATED, view:'show']
+            }
+        }
+    }
+
+    // PUT : edit question
+    @Transactional
+    def update() {
+
+        if(!Feature.findByName("Question").getEnable()) {
+            render status: SERVICE_UNAVAILABLE
+            return
+        }
+
+        Question question = queryForResource(params.id)
+
+        if (question == null) {
+            transactionStatus.setRollbackOnly()
+            notFound()
+            return
+        }
+
+        question.properties = getObjectToBind()
+
+        if (question.hasErrors()) {
+            transactionStatus.setRollbackOnly()
+            respond question.errors, view:'edit' // STATUS CODE 422
+            return
+        }
+
+        updateResource question
+        request.withFormat {
+            form multipartForm {
+                flash.message = message(code: 'default.updated.message', args: [classMessageArg, question.id])
+                redirect question
+            }
+            '*'{
+                response.addHeader(HttpHeaders.LOCATION,
+                        grailsLinkGenerator.link( resource: this.controllerName, action: 'show',id: question.id, absolute: true,
+                                namespace: hasProperty('namespace') ? this.namespace : null ))
+                respond question, [status: OK]
+            }
+        }
+    }
+
+    // DELETE : delete question
+    @Transactional
+    def delete() {
+        if(!Feature.findByName("Question").getEnable()) {
+            render status: SERVICE_UNAVAILABLE
+        }
+
+        def question = queryForResource(params.id)
+        if (question == null) {
+            transactionStatus.setRollbackOnly()
+            notFound()
+            return
+        }
+
+        deleteResource question
+
+        request.withFormat {
+            form multipartForm {
+                flash.message = message(code: 'default.deleted.message', args: [classMessageArg, question.id])
+                redirect action:"index", method:"GET"
+            }
+            '*'{ render status: NO_CONTENT } // NO CONTENT STATUS CODE
+        }
+    }
+
+
+    // TODO : do we really need it ?
     def test(Question question) {
         if(!Feature.findByName("Question").getEnable()) {
             render status: SERVICE_UNAVAILABLE
@@ -36,133 +163,83 @@ class QuestionController extends RestfulController {
         respond question
     }
 
-    @Secured(['ROLE_ANONYMOUS'])
-    def show(Question question) {
-        if(!Feature.findByName("Question").getEnable()) {
-            render status: SERVICE_UNAVAILABLE
-        }
-
-        respond question
-    }
-
     @Transactional
-    def save(){
+    def upVote() {
         if(!Feature.findByName("Question").getEnable()) {
             render status: SERVICE_UNAVAILABLE
+            return
         }
 
-        Question question = new Question(
-                title: params.title,
-                text: params.text,
-                resolved: false,
-                vote: 0,
-                created: new Date(),
-                user: (User)getAuthenticatedUser()
-        )
-
-        def tags = []
-        for(idTag in params.tags) {
-            tags << Tag.get(idTag)
-        }
-
-        question.tags = tags
+        Question question = queryForResource(params.id)
 
         if (question == null) {
             transactionStatus.setRollbackOnly()
             notFound()
-            return
-        }
-
-        if (question.hasErrors()) {
-            transactionStatus.setRollbackOnly()
-            respond question.errors, view:'create'
-            return
-        }
-
-        question.save(failOnError: true)
-        Badge.controlBadges(question.user)?.save()
-
-        request.withFormat {
-            form multipartForm {
-                flash.message = message(code: 'default.created.message', args: [message(code: 'question.label', default: 'Question'), question.id])
-                redirect controller: 'Question', action: 'index'
-            }
-            '*' { respond question, [status: CREATED] }
-        }
-    }
-
-    @Transactional
-    def upVote(Question question){
-        if(!Feature.findByName("Question").getEnable() || !Feature.findByName("Vote").getEnable()) {
-            render status: SERVICE_UNAVAILABLE
-        }
-
-        if (question == null) {
-            transactionStatus.setRollbackOnly()
-            notFound()
-            return
-        }
-
-        if (question.hasErrors()) {
-            transactionStatus.setRollbackOnly()
-            respond question.errors, view:'edit'
             return
         }
 
         question.vote++
         question.user.reputation += User.REPUTATION_COEF
         Badge.controlBadges(question.user)
-        question.user.save()
-        question.save flush:true
 
+        updateResource question
         request.withFormat {
             form multipartForm {
-                flash.message = message(code: 'default.updated.message', args: [message(code: 'question.label', default: 'Question'), question.id])
+                flash.message = message(code: 'default.updated.message', args: [classMessageArg, question.id])
                 redirect question
             }
-            '*'{ respond question, [status: OK] }
+            '*'{
+                response.addHeader(HttpHeaders.LOCATION,
+                        grailsLinkGenerator.link( resource: this.controllerName, action: 'show',id: question.id, absolute: true,
+                                namespace: hasProperty('namespace') ? this.namespace : null ))
+                respond question, [status: OK]
+            }
         }
     }
 
     @Transactional
-    def downVote(Question question) {
-        if(!Feature.findByName("Question").getEnable() || !Feature.findByName("Vote").getEnable()) {
+    def downVote() {
+        if(!Feature.findByName("Question").getEnable()) {
             render status: SERVICE_UNAVAILABLE
+            return
         }
+
+        Question question = queryForResource(params.id)
 
         if (question == null) {
             transactionStatus.setRollbackOnly()
             notFound()
-            return
-        }
-
-        if (question.hasErrors()) {
-            transactionStatus.setRollbackOnly()
-            respond question.errors, view:'edit'
             return
         }
 
         question.vote--
         question.user.reputation -= User.REPUTATION_COEF
         Badge.controlBadges(question.user)
-        question.user.save()
-        question.save flush:true
 
+        updateResource question
         request.withFormat {
             form multipartForm {
-                flash.message = message(code: 'default.updated.message', args: [message(code: 'question.label', default: 'Question'), question.id])
+                flash.message = message(code: 'default.updated.message', args: [classMessageArg, question.id])
                 redirect question
             }
-            '*'{ respond question, [status: OK] }
+            '*'{
+                response.addHeader(HttpHeaders.LOCATION,
+                        grailsLinkGenerator.link( resource: this.controllerName, action: 'show',id: question.id, absolute: true,
+                                namespace: hasProperty('namespace') ? this.namespace : null ))
+                respond question, [status: OK]
+            }
         }
     }
 
     @Secured(['ROLE_ANONYMOUS'])
     @Transactional
-    def addView(Question question) {
+    def addView() {
         if(!Feature.findByName("Question").getEnable()) {
             render status: SERVICE_UNAVAILABLE
+            return
         }
+
+        Question question = queryForResource(params.id)
 
         if (question == null) {
             transactionStatus.setRollbackOnly()
@@ -170,28 +247,31 @@ class QuestionController extends RestfulController {
             return
         }
 
-        if (question.hasErrors()) {
-            transactionStatus.setRollbackOnly()
-            respond question.errors, view:'edit'
-            return
-        }
-        question.views++
-        question.save flush:true
+        question.view++
+        updateResource question
 
         request.withFormat {
             form multipartForm {
-                flash.message = message(code: 'default.updated.message', args: [message(code: 'question.label', default: 'Question'), question.id])
+                flash.message = message(code: 'default.updated.message', args: [classMessageArg, question.id])
                 redirect question
             }
-            '*'{ respond question, [status: OK] }
+            '*'{
+                response.addHeader(HttpHeaders.LOCATION,
+                        grailsLinkGenerator.link( resource: this.controllerName, action: 'show',id: question.id, absolute: true,
+                                namespace: hasProperty('namespace') ? this.namespace : null ))
+                respond question, [status: OK]
+            }
         }
     }
 
     @Transactional
-    def setResolved(Question question) {
+    def setResolved() {
         if(!Feature.findByName("Question").getEnable()) {
             render status: SERVICE_UNAVAILABLE
+            return
         }
+
+        Question question = queryForResource(params.id)
 
         if (question == null) {
             transactionStatus.setRollbackOnly()
@@ -199,115 +279,27 @@ class QuestionController extends RestfulController {
             return
         }
 
-        if (question.hasErrors()) {
-            transactionStatus.setRollbackOnly()
-            respond question.errors, view:'edit'
-            return
-        }
         question.resolved = true
-        question.save flush:true
+        updateResource question
 
         request.withFormat {
             form multipartForm {
-                flash.message = message(code: 'default.updated.message', args: [message(code: 'question.label', default: 'Question'), question.id])
+                flash.message = message(code: 'default.updated.message', args: [classMessageArg, question.id])
                 redirect question
             }
-            '*'{ respond question, [status: OK] }
-        }
-    }
-
-    @Transactional
-    def update(Question question) {
-
-        if(!Feature.findByName("Question").getEnable()) {
-            render status: SERVICE_UNAVAILABLE
-            return
-        }
-
-        if (question == null) {
-            transactionStatus.setRollbackOnly()
-            notFound()
-            return
-        }
-
-        if (question.hasErrors()) {
-            transactionStatus.setRollbackOnly()
-            respond question.errors, view:'edit'
-            return
-        }
-
-        question.save flush:true
-
-        request.withFormat {
-            form multipartForm {
-                flash.message = message(code: 'default.updated.message', args: [message(code: 'question.label', default: 'Question'), question.id])
-                redirect question
+            '*'{
+                response.addHeader(HttpHeaders.LOCATION,
+                        grailsLinkGenerator.link( resource: this.controllerName, action: 'show',id: question.id, absolute: true,
+                                namespace: hasProperty('namespace') ? this.namespace : null ))
+                respond question, [status: OK]
             }
-            '*'{ respond question, [status: OK] }
-        }
-    }
-
-
-    @Transactional
-    def updateText(Question question, String title, String text) {
-        if(!Feature.findByName("Question").getEnable()) {
-            render status: SERVICE_UNAVAILABLE
-        }
-
-        if (question == null) {
-            transactionStatus.setRollbackOnly()
-            notFound()
-            return
-        }
-
-        if (question.hasErrors()) {
-            transactionStatus.setRollbackOnly()
-            respond question.errors, view:'edit'
-            return
-        }
-
-        question.title = title
-        question.text = text
-        question.edited = new Date()
-        question.save flush:true
-
-        request.withFormat {
-            form multipartForm {
-                flash.message = message(code: 'default.updated.message', args: [message(code: 'question.label', default: 'Question'), question.id])
-                redirect controller: 'Question', action: 'show', id: question.id
-            }
-            '*'{ respond question, [status: OK] }
-        }
-    }
-
-
-    @Transactional
-    def delete(Question question) {
-        if(!Feature.findByName("Question").getEnable()) {
-            render status: SERVICE_UNAVAILABLE
-        }
-
-        if (question == null) {
-            transactionStatus.setRollbackOnly()
-            notFound()
-            return
-        }
-
-        question.delete flush:true
-
-        request.withFormat {
-            form multipartForm {
-                flash.message = message(code: 'default.deleted.message', args: [message(code: 'question.label', default: 'Question'), question.id])
-                redirect action:"index", method:"GET"
-            }
-            '*'{ render status: NO_CONTENT }
         }
     }
 
     protected void notFound() {
         request.withFormat {
             form multipartForm {
-                flash.message = message(code: 'default.not.found.message', args: [message(code: 'question.label', default: 'Question'), params.id])
+                flash.message = message(code: 'default.not.found.message', args: [classMessageArg, params.id])
                 redirect action: "index", method: "GET"
             }
             '*'{ render status: NOT_FOUND }
