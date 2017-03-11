@@ -1,180 +1,96 @@
 package stackoverflow
 
+import grails.rest.RestfulController
+import grails.web.http.HttpHeaders
+
 import static org.springframework.http.HttpStatus.*
 import grails.transaction.Transactional
 import grails.plugin.springsecurity.annotation.Secured
 
-@Secured(['ROLE_ANONYMOUS'])
+@Secured(['ROLE_USER'])
 @Transactional(readOnly = true)
-class CommentController {
+class CommentController extends RestfulController {
 
     static allowedMethods = [show:"GET", addComment: "POST", upVote: "PUT", downVote: "PUT",
                              update: "PUT", updateText: "PUT", delete: "DELETE"]
+
     static responseFormats = ['json', 'xml']
 
-    def show(Comment comment) {
+    CommentController() {
+        super(Comment)
+    }
+
+    // GET LIST
+    @Secured(['ROLE_ANONYMOUS'])
+    index(Integer max) {
         if(!Feature.findByName("Comment").getEnable()) {
             render status: SERVICE_UNAVAILABLE
         }
 
-        respond comment
+        params.max = Math.min(max ?: 10, 100)
+        respond Comment.list(params), model:[commentCount: Comment.count()]
+    }
+
+
+    // GET WITH ID
+    @Secured(['ROLE_ANONYMOUS'])
+    show() {
+        if(!Feature.findByName("Comment").getEnable()) {
+            render status: SERVICE_UNAVAILABLE
+        }
+
+        respond queryForResource(params.id)
     }
 
     @Secured(['ROLE_USER'])
     @Transactional
-    def addComment(){
+    def save() {
+
         if(!Feature.findByName("Comment").getEnable()) {
             render status: SERVICE_UNAVAILABLE
         }
 
-        def idQuestion = params.idAnswer!=null?Answer.get(params.idAnswer).question.id:params.idQuestion
+        // Create resource
+        def comment = createResource()
 
-        Comment comment = new Comment(
-                text: params.text,
-                vote: 0,
-                created: new Date(),
-                user: (User)getAuthenticatedUser()
-        )
+        // Assign defaults
+        comment.vote = 0
+        comment.created = new Date()
+        comment.user = (User) getAuthenticatedUser()
 
-        if(params.idAnswer!=null){
-            comment.setAnswer(Answer.get(params.idAnswer))
-        }else{
-            comment.setQuestion(Question.get(params.idQuestion))
-        }
-
-        if (comment == null) {
-            transactionStatus.setRollbackOnly()
-            notFound()
-            return
-        }
-
+        // Verify
         if (comment.hasErrors()) {
             transactionStatus.setRollbackOnly()
-            respond comment.errors, view:'create'
+            respond comment.errors, view:'create'  // STATUS CODE 422
             return
         }
 
-        comment.save flush:true
+        // Save
+        saveResource comment
+
+        // Change badges
         Badge.controlBadges(comment.user)?.save()
 
+        // Send response
         request.withFormat {
-            form multipartForm {
-                flash.message = message(code: 'default.created.message', args: [message(code: 'comment.label', default: 'Comment'), comment.id])
-                redirect controller: 'Question', action: 'show', id: idQuestion
+            '*' {
+                response.addHeader(HttpHeaders.LOCATION,
+                        grailsLinkGenerator.link( resource: this.controllerName, action: 'show',id: comment.id, absolute: true,
+                                namespace: hasProperty('namespace') ? this.namespace : null ))
+                respond comment, [status: CREATED, view:'show']
             }
-            '*' { respond comment, [status: CREATED] }
-        }
-    }
-
-    @Secured(['ROLE_ANONYMOUS'])
-    @Transactional
-    def upVote(Comment comment){
-
-        if(!Feature.findByName("Vote").getEnable() || !Feature.findByName("Comment").getEnable()) {
-            render status: SERVICE_UNAVAILABLE
-        }
-
-        if (comment == null) {
-            transactionStatus.setRollbackOnly()
-            notFound()
-            return
-        }
-
-        if (comment.hasErrors()) {
-            transactionStatus.setRollbackOnly()
-            respond comment.errors, view:'edit'
-            return
-        }
-
-        def idQuestion = comment.answer!=null?comment.answer.question.id:comment.question.id
-        comment.vote++
-        comment.user.reputation += User.REPUTATION_COEF
-        Badge.controlBadges(comment.user)
-        comment.user.save flush: true
-
-        comment.save flush:true
-
-        request.withFormat {
-            form multipartForm {
-                flash.message = message(code: 'default.updated.message', args: [message(code: 'comment.label', default: 'Comment'), comment.id])
-                redirect controller: 'Question', action: 'show', id: idQuestion
-            }
-            '*'{ respond comment, [status: OK] }
-        }
-    }
-
-    @Secured(['ROLE_ANONYMOUS'])
-    @Transactional
-    def downVote(Comment comment) {
-
-        if(!Feature.findByName("Vote").getEnable() || !Feature.findByName("Comment").getEnable()) {
-            render status: SERVICE_UNAVAILABLE
-        }
-
-        if (comment == null) {
-            transactionStatus.setRollbackOnly()
-            notFound()
-            return
-        }
-
-        if (comment.hasErrors()) {
-            transactionStatus.setRollbackOnly()
-            respond comment.errors, view:'edit'
-            return
-        }
-
-        def idQuestion = comment.answer!=null?comment.answer.question.id:comment.question.id
-        comment.vote--
-        comment.user.reputation -= User.REPUTATION_COEF
-        Badge.controlBadges(comment.user)
-        comment.user.save flush: true
-        comment.save flush:true
-
-        request.withFormat {
-            form multipartForm {
-                flash.message = message(code: 'default.updated.message', args: [message(code: 'comment.label', default: 'Comment'), comment.id])
-                redirect controller: 'Question', action: 'show', id: idQuestion
-            }
-            '*'{ respond comment, [status: OK] }
         }
     }
 
     @Transactional
-    def update(Comment comment) {
+    def update() {
 
         if (!Feature.findByName("Comment").getEnable()) {
             render status: SERVICE_UNAVAILABLE
             return
         }
 
-        if (comment == null) {
-            transactionStatus.setRollbackOnly()
-            notFound()
-            return
-        }
-
-        if (comment.hasErrors()) {
-            transactionStatus.setRollbackOnly()
-            respond comment.errors, view: 'edit'
-            return
-        }
-
-        comment.save flush: true
-
-        request.withFormat {
-            form multipartForm {
-                flash.message = message(code: 'default.updated.message', args: [message(code: 'comment.label', default: 'Comment'), comment.id])
-                redirect comment
-            }
-            '*' { respond comment, [status: OK] }
-        }
-    }
-
-    @Transactional
-    def updateText(Comment comment, String text) {
-        if(!Feature.findByName("Comment").getEnable()) {
-            render status: SERVICE_UNAVAILABLE
-        }
+        Comment comment = queryForResource(params.id)
 
         if (comment == null) {
             transactionStatus.setRollbackOnly()
@@ -184,29 +100,50 @@ class CommentController {
 
         if (comment.hasErrors()) {
             transactionStatus.setRollbackOnly()
-            respond comment.errors, view:'edit'
+            respond comment.errors, view: 'edit'  // STATUS CODE 422
             return
         }
 
-        def idQuestion = comment.answer!=null?comment.answer.question.id:comment.question.id
-        comment.text = text
-        comment.edited = new Date()
-        comment.save flush:true
+        updateResource comment
 
         request.withFormat {
-            form multipartForm {
-                flash.message = message(code: 'default.created.message', args: [message(code: 'comment.label', default: 'Comment'), comment.id])
-                redirect controller: 'Question', action: 'show', id: idQuestion
+            '*'{
+                response.addHeader(HttpHeaders.LOCATION,
+                        grailsLinkGenerator.link( resource: this.controllerName, action: 'show',id: comment.id, absolute: true,
+                                namespace: hasProperty('namespace') ? this.namespace : null ))
+                respond comment, [status: OK]
             }
-            '*'{ respond comment, [status: OK] }
         }
     }
 
     @Transactional
-    def delete(Comment comment) {
+    delete() {
         if(!Feature.findByName("Comment").getEnable()) {
             render status: SERVICE_UNAVAILABLE
         }
+
+        def comment = queryForResource(params.id)
+        if (comment == null) {
+            transactionStatus.setRollbackOnly()
+            notFound()
+            return
+        }
+
+        deleteResource comment
+
+        request.withFormat {
+            '*'{ render status: NO_CONTENT } // NO CONTENT STATUS CODE
+        }
+    }
+
+    @Transactional
+    def upVote(){
+
+        if(!Feature.findByName("Vote").getEnable() || !Feature.findByName("Comment").getEnable()) {
+            render status: SERVICE_UNAVAILABLE
+        }
+
+        Comment comment = queryForResource(params.id)
 
         if (comment == null) {
             transactionStatus.setRollbackOnly()
@@ -214,24 +151,55 @@ class CommentController {
             return
         }
 
-        def questionId = comment.answer!=null? comment.answer.question.id:comment.question.id
-        comment.delete flush:true
+        comment.vote++
+        comment.user.reputation += User.REPUTATION_COEF
+        Badge.controlBadges(comment.user)
+
+        updateResource comment
 
         request.withFormat {
-            form multipartForm {
-                flash.message = message(code: 'default.deleted.message', args: [message(code: 'comment.label', default: 'Comment'), comment.id])
-                redirect action:"show", controller: "question", id: questionId, method:"GET"
+            '*'{
+                response.addHeader(HttpHeaders.LOCATION,
+                        grailsLinkGenerator.link( resource: this.controllerName, action: 'show',id: comment.id, absolute: true,
+                                namespace: hasProperty('namespace') ? this.namespace : null ))
+                respond comment, [status: OK]
             }
-            '*'{ render status: NO_CONTENT }
+        }
+    }
+
+    @Transactional
+    def downVote(){
+
+        if(!Feature.findByName("Vote").getEnable() || !Feature.findByName("Comment").getEnable()) {
+            render status: SERVICE_UNAVAILABLE
+        }
+
+        Comment comment = queryForResource(params.id)
+
+        if (comment == null) {
+            transactionStatus.setRollbackOnly()
+            notFound()
+            return
+        }
+
+        comment.vote--
+        comment.user.reputation -= User.REPUTATION_COEF
+        Badge.controlBadges(comment.user)
+
+        updateResource comment
+
+        request.withFormat {
+            '*'{
+                response.addHeader(HttpHeaders.LOCATION,
+                        grailsLinkGenerator.link( resource: this.controllerName, action: 'show',id: comment.id, absolute: true,
+                                namespace: hasProperty('namespace') ? this.namespace : null ))
+                respond comment, [status: OK]
+            }
         }
     }
 
     protected void notFound() {
         request.withFormat {
-            form multipartForm {
-                flash.message = message(code: 'default.not.found.message', args: [message(code: 'comment.label', default: 'Comment'), params.id])
-                redirect action: "index", method: "GET"
-            }
             '*'{ render status: NOT_FOUND }
         }
     }

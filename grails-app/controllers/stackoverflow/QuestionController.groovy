@@ -34,7 +34,7 @@ class QuestionController extends RestfulController {
         respond Question.list(params), model:[questionCount: Question.count()]
     }
 
-    // GET ID
+    // GET WITH ID
     @Secured(['ROLE_ANONYMOUS'])
     show() {
         if(!Feature.findByName("Question").getEnable()) {
@@ -76,15 +76,11 @@ class QuestionController extends RestfulController {
 
         // Send response
         request.withFormat {
-            form multipartForm {
-                flash.message = message(code: 'default.created.message', args: [classMessageArg, question.id])
-                redirect question
-            }
             '*' {
                 response.addHeader(HttpHeaders.LOCATION,
                         grailsLinkGenerator.link( resource: this.controllerName, action: 'show',id: question.id, absolute: true,
                                 namespace: hasProperty('namespace') ? this.namespace : null ))
-                respond question, [status: CREATED, view:'show']
+                respond question, [status: CREATED]
             }
         }
     }
@@ -116,10 +112,6 @@ class QuestionController extends RestfulController {
 
         updateResource question
         request.withFormat {
-            form multipartForm {
-                flash.message = message(code: 'default.updated.message', args: [classMessageArg, question.id])
-                redirect question
-            }
             '*'{
                 response.addHeader(HttpHeaders.LOCATION,
                         grailsLinkGenerator.link( resource: this.controllerName, action: 'show',id: question.id, absolute: true,
@@ -146,10 +138,6 @@ class QuestionController extends RestfulController {
         deleteResource question
 
         request.withFormat {
-            form multipartForm {
-                flash.message = message(code: 'default.deleted.message', args: [classMessageArg, question.id])
-                redirect action:"index", method:"GET"
-            }
             '*'{ render status: NO_CONTENT } // NO CONTENT STATUS CODE
         }
     }
@@ -185,10 +173,6 @@ class QuestionController extends RestfulController {
 
         updateResource question
         request.withFormat {
-            form multipartForm {
-                flash.message = message(code: 'default.updated.message', args: [classMessageArg, question.id])
-                redirect question
-            }
             '*'{
                 response.addHeader(HttpHeaders.LOCATION,
                         grailsLinkGenerator.link( resource: this.controllerName, action: 'show',id: question.id, absolute: true,
@@ -219,10 +203,6 @@ class QuestionController extends RestfulController {
 
         updateResource question
         request.withFormat {
-            form multipartForm {
-                flash.message = message(code: 'default.updated.message', args: [classMessageArg, question.id])
-                redirect question
-            }
             '*'{
                 response.addHeader(HttpHeaders.LOCATION,
                         grailsLinkGenerator.link( resource: this.controllerName, action: 'show',id: question.id, absolute: true,
@@ -252,10 +232,6 @@ class QuestionController extends RestfulController {
         updateResource question
 
         request.withFormat {
-            form multipartForm {
-                flash.message = message(code: 'default.updated.message', args: [classMessageArg, question.id])
-                redirect question
-            }
             '*'{
                 response.addHeader(HttpHeaders.LOCATION,
                         grailsLinkGenerator.link( resource: this.controllerName, action: 'show',id: question.id, absolute: true,
@@ -284,10 +260,6 @@ class QuestionController extends RestfulController {
         updateResource question
 
         request.withFormat {
-            form multipartForm {
-                flash.message = message(code: 'default.updated.message', args: [classMessageArg, question.id])
-                redirect question
-            }
             '*'{
                 response.addHeader(HttpHeaders.LOCATION,
                         grailsLinkGenerator.link( resource: this.controllerName, action: 'show',id: question.id, absolute: true,
@@ -299,10 +271,6 @@ class QuestionController extends RestfulController {
 
     protected void notFound() {
         request.withFormat {
-            form multipartForm {
-                flash.message = message(code: 'default.not.found.message', args: [classMessageArg, params.id])
-                redirect action: "index", method: "GET"
-            }
             '*'{ render status: NOT_FOUND }
         }
     }
