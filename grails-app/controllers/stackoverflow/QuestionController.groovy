@@ -9,6 +9,7 @@ import static org.springframework.http.HttpStatus.CREATED
 import static org.springframework.http.HttpStatus.NOT_FOUND
 import static org.springframework.http.HttpStatus.NO_CONTENT
 import static org.springframework.http.HttpStatus.OK
+import static org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE
 
 @Secured(['ROLE_USER'])
 @Transactional(readOnly = true)
@@ -140,16 +141,6 @@ class QuestionController extends RestfulController {
         request.withFormat {
             '*'{ render status: NO_CONTENT } // NO CONTENT STATUS CODE
         }
-    }
-
-
-    // TODO : do we really need it ?
-    def test(Question question) {
-        if(!Feature.findByName("Question").getEnable()) {
-            render status: SERVICE_UNAVAILABLE
-        }
-
-        respond question
     }
 
     @Transactional

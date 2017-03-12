@@ -11,9 +11,8 @@ class UrlMappings {
 
         "/question"(resources:'question')
         "/user"(resources:'user')
-        "/answer"(resources:'answer', excludes:['create','edit'])
-        "/comment"(resources:'comment', excludes:['create','edit'])
-
+        "/answer"(resources:'answer')
+        "/comment"(resources:'comment')
 
         "/tag"(resources:'tag')
         "/badge"(resources:'badge')

@@ -1,27 +1,35 @@
 package stackoverflow
 
+import grails.rest.RestfulController
+import grails.web.http.HttpHeaders
+
 import static org.springframework.http.HttpStatus.*
 import grails.transaction.Transactional
 import grails.plugin.springsecurity.annotation.Secured
 
 @Secured(['ROLE_USER'])
 @Transactional(readOnly = true)
-class AnswerController {
+class AnswerController  extends RestfulController {
 
     static allowedMethods = [show:"GET", addAnswer: "POST", upVote: "PUT", downVote: "PUT",
                              update: "PUT", updateText: "PUT", delete: "DELETE"]
     static responseFormats = ['json', 'xml']
 
+    AnswerController() {
+        super(Question)
+    }
+
     @Secured(['ROLE_ANONYMOUS'])
-    def show(Answer answer) {
+    show() {
         if(!Feature.findByName("Answer").getEnable()) {
             render status: SERVICE_UNAVAILABLE
         }
-        respond answer
+
+        respond queryForResource(params.id)
     }
 
     @Transactional
-    def addAnswer(){
+    save(){
         if(!Feature.findByName("Answer").getEnable()) {
             render status: SERVICE_UNAVAILABLE
         }
@@ -50,11 +58,71 @@ class AnswerController {
 
         Badge.controlBadges((User)getAuthenticatedUser())?.save()
 
-        respond answer, [status: CREATED]
+        // Send response
+        request.withFormat {
+            '*' {
+                response.addHeader(HttpHeaders.LOCATION,
+                        grailsLinkGenerator.link( resource: this.controllerName, action: 'show',id: answer.id, absolute: true,
+                                namespace: hasProperty('namespace') ? this.namespace : null ))
+                respond answer, [status: CREATED]
+            }
+        }
     }
 
     @Transactional
-    def upVote(Answer answer){
+    update(Answer answer) {
+
+        if(!Feature.findByName("Answer").getEnable()) {
+            render status: SERVICE_UNAVAILABLE
+            return
+        }
+
+        if (answer == null) {
+            transactionStatus.setRollbackOnly()
+            notFound()
+            return
+        }
+
+        if (answer.hasErrors()) {
+            transactionStatus.setRollbackOnly()
+            respond answer.errors, view:'edit'
+            return
+        }
+
+        answer.save flush:true
+
+        request.withFormat {
+            '*' {
+                response.addHeader(HttpHeaders.LOCATION,
+                        grailsLinkGenerator.link( resource: this.controllerName, action: 'show',id: answer.id, absolute: true,
+                                namespace: hasProperty('namespace') ? this.namespace : null ))
+                respond answer, [status: OK]
+            }
+        }
+    }
+
+    @Transactional
+    delete(Answer answer) {
+        if(!Feature.findByName("Answer").getEnable()) {
+            render status: SERVICE_UNAVAILABLE
+        }
+
+        if (answer == null) {
+            transactionStatus.setRollbackOnly()
+            render status: NOT_FOUND
+            return
+        }
+
+        def questionId = answer.question.id
+        answer.delete flush:true
+
+        request.withFormat {
+            '*'{ render status: NO_CONTENT } // NO CONTENT STATUS CODE
+        }
+    }
+
+    @Transactional
+    upVote(Answer answer){
         if(!Feature.findByName("Answer").getEnable() || !Feature.findByName("Vote").getEnable()) {
             render status: SERVICE_UNAVAILABLE
         }
@@ -79,11 +147,19 @@ class AnswerController {
 
         answer.save flush:true
 
-        respond answer, [status: OK]
+
+        request.withFormat {
+            '*' {
+                response.addHeader(HttpHeaders.LOCATION,
+                        grailsLinkGenerator.link( resource: this.controllerName, action: 'show',id: answer.id, absolute: true,
+                                namespace: hasProperty('namespace') ? this.namespace : null ))
+                respond answer, [status: OK]
+            }
+        }
     }
 
     @Transactional
-    def downVote(Answer answer) {
+    downVote(Answer answer) {
         if(!Feature.findByName("Answer").getEnable() || !Feature.findByName("Vote").getEnable()) {
             render status: SERVICE_UNAVAILABLE
         }
@@ -107,80 +183,19 @@ class AnswerController {
         Badge.controlBadges(answer.user)
         answer.user.save flush:true
 
-        respond answer, [status: OK]
-    }
-
-    @Transactional
-    def update(Answer answer) {
-
-        if(!Feature.findByName("Answer").getEnable()) {
-            render status: SERVICE_UNAVAILABLE
-            return
-        }
-
-        if (answer == null) {
-            transactionStatus.setRollbackOnly()
-            notFound()
-            return
-        }
-
-        if (answer.hasErrors()) {
-            transactionStatus.setRollbackOnly()
-            respond answer.errors, view:'edit'
-            return
-        }
-
-        answer.save flush:true
-
         request.withFormat {
-            form multipartForm {
-                flash.message = message(code: 'default.updated.message', args: [message(code: 'answer.label', default: 'Answer'), answer.id])
-                redirect answer
+            '*' {
+                response.addHeader(HttpHeaders.LOCATION,
+                        grailsLinkGenerator.link( resource: this.controllerName, action: 'show',id: answer.id, absolute: true,
+                                namespace: hasProperty('namespace') ? this.namespace : null ))
+                respond answer, [status: OK]
             }
-            '*'{ respond answer, [status: OK] }
         }
     }
 
-    @Transactional
-    def updateText(Answer answer, String text) {
-        if(!Feature.findByName("Answer").getEnable()) {
-            render status: SERVICE_UNAVAILABLE
+    protected void notFound() {
+        request.withFormat {
+            '*'{ render status: NOT_FOUND }
         }
-
-        if (answer == null) {
-            transactionStatus.setRollbackOnly()
-            render status: NOT_FOUND
-            return
-        }
-
-        if (answer.hasErrors()) {
-            transactionStatus.setRollbackOnly()
-            respond answer.errors, view:'edit'
-            return
-        }
-
-        answer.text = text
-        answer.edited = new Date()
-        answer.save flush:true
-
-        response answer, [status: OK]
-    }
-
-    @Transactional
-    def delete(Answer answer) {
-        if(!Feature.findByName("Answer").getEnable()) {
-            render status: SERVICE_UNAVAILABLE
-        }
-
-        if (answer == null) {
-            transactionStatus.setRollbackOnly()
-            render status: NOT_FOUND
-            return
-        }
-
-        def questionId = answer.question.id
-        answer.delete flush:true
-
-        render status: NO_CONTENT
     }
 }
