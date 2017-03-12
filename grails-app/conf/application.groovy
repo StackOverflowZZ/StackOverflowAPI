@@ -28,7 +28,7 @@ grails.plugin.springsecurity.roleHierarchy = '''
 grails.plugin.springsecurity.controllerAnnotations.staticRules = [
 		[pattern: '/',               access: ['permitAll']],
 		[pattern: '/error',          access: ['permitAll']],
-		[pattern: '/health',         access: ['permitAll']],
+		[pattern: '/health',         access: ['ROLE_ANONYMOUS']],
 		[pattern: '/index',          access: ['permitAll']],
 		[pattern: '/shutdown',       access: ['permitAll']],
 		[pattern: '/assets/**',      access: ['permitAll']],
