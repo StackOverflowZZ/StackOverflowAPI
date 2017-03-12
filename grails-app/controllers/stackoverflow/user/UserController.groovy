@@ -7,6 +7,7 @@ import grails.web.http.HttpHeaders
 import stackoverflow.Feature
 import stackoverflow.Role
 import stackoverflow.User
+import stackoverflow.UserRole
 
 import static org.springframework.http.HttpStatus.CREATED
 import static org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE
@@ -49,8 +50,6 @@ class UserController extends RestfulController {
         // Create resource
         def user = createResource()
 
-
-
         // Verify
         if (user.hasErrors()) {
             transactionStatus.setRollbackOnly()
@@ -59,9 +58,10 @@ class UserController extends RestfulController {
         }
 
         // Save
-        UserRole.create user, Role.findByAuthority('ROLE_USER')
-
         saveResource user
+
+        // Define role
+        UserRole.create user, Role.findByAuthority('ROLE_USER')
 
         // Send response
         request.withFormat {
