@@ -29,7 +29,7 @@ class UrlHealthIndicator extends AbstractHealthIndicator {
                 }
 
         // If code in 200 to 399 range everything is fine.
-        responseCode in (200..399) ?
+        responseCode == 200 ?
                 builder.up() :
                 builder.down(new Exception("Invalid responseCode '${responseCode}' checking '${url}'."))
     }

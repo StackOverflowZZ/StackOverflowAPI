@@ -12,7 +12,13 @@ class Application extends GrailsAutoConfiguration {
     Closure doWithSpring() {
         { ->
             // Create instance for URL health indicator.
-            urlHealthCheck(UrlHealthIndicator, 'http://localhost:8080', 2000)
+            urlHealthCheckUser(UrlHealthIndicator, 'http://localhost:8080/Feature/healthCheck?name="User"', 2000)
+            urlHealthCheckComment(UrlHealthIndicator, 'http://localhost:8080/Feature/healthCheck?name="Comment"', 2000)
+            urlHealthCheckAnswer(UrlHealthIndicator, 'http://localhost:8080/Feature/healthCheck?name="Answer"', 2000)
+            urlHealthCheckQuestion(UrlHealthIndicator, 'http://localhost:8080/Feature/healthCheck?name="Question"', 2000)
+            urlHealthCheckBadge(UrlHealthIndicator, 'http://localhost:8080/Feature/healthCheck?name="Badge"', 2000)
+            urlHealthCheckTag(UrlHealthIndicator, 'http://localhost:8080/Feature/healthCheck?name="Tag"', 2000)
+            urlHealthCheckVote(UrlHealthIndicator, 'http://localhost:8080/Feature/healthCheck?name="Vote"', 2000)
         }
     }
 }

@@ -5,7 +5,7 @@ import grails.plugin.springsecurity.annotation.Secured
 import static org.springframework.http.HttpStatus.*
 import grails.transaction.Transactional
 
-@Secured(['ROLE_ANONYMOUS'])
+@Secured(['ROLE_ADMIN'])
 @Transactional(readOnly = true)
 class FeatureController {
 
@@ -13,7 +13,7 @@ class FeatureController {
     static responseFormats = ['json', 'xml']
 
     @Transactional
-    def toggle(Feature feature) {
+    toggle(Feature feature) {
         if (feature == null) {
             transactionStatus.setRollbackOnly()
             notFound()
@@ -41,6 +41,20 @@ class FeatureController {
     def index(Integer max) {
         params.max = Math.min(max ?: 10, 100)
         respond Feature.list(params), model:[featureCount: Feature.count()]
+    }
+
+    @Secured(['ROLE_ANONYMOUS'])
+    def healthCheck(){
+        Feature feature = Feature.findByName(params.name)
+        if (feature==null){
+            respond status:NOT_FOUND
+            return
+        }
+        if (!feature.enable) {
+            respond status:SERVICE_UNAVAILABLE
+            return
+        }
+        respond status:OK
     }
 
     protected void notFound() {
