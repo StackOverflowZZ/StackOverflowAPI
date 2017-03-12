@@ -47,14 +47,14 @@ class FeatureController {
     def healthCheck(){
         Feature feature = Feature.findByName(params.name)
         if (feature==null){
-            respond status:NOT_FOUND
+            respond status: NOT_FOUND
             return
         }
         if (!feature.enable) {
-            respond status:SERVICE_UNAVAILABLE
+            respond status: SERVICE_UNAVAILABLE
             return
         }
-        respond status:OK
+        respond status: OK
     }
 
     protected void notFound() {
