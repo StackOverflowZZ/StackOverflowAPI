@@ -5,9 +5,11 @@ import grails.rest.RestfulController
 import grails.transaction.Transactional
 import grails.web.http.HttpHeaders
 import stackoverflow.Feature
+import stackoverflow.Role
 import stackoverflow.User
 
 import static org.springframework.http.HttpStatus.CREATED
+import static org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE
 
 @Secured(['ROLE_ANONYMOUS'])
 @Transactional(readOnly = true)
@@ -57,7 +59,7 @@ class UserController extends RestfulController {
         }
 
         // Save
-// TODO : assign role        UserRole.create user, Role.find
+        UserRole.create user, Role.findByAuthority('ROLE_USER')
 
         saveResource user
 
