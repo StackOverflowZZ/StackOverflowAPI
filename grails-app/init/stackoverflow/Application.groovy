@@ -12,7 +12,7 @@ class Application extends GrailsAutoConfiguration {
     Closure doWithSpring() {
         { ->
             // Create instance for URL health indicator.
-            urlHealthCheck(UrlHealthIndicator, 'http://intranet', 2000)
+            urlHealthCheck(UrlHealthIndicator, 'http://localhost:8080', 2000)
         }
     }
 }
