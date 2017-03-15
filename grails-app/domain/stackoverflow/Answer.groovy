@@ -1,6 +1,8 @@
 package stackoverflow
 
+import grails.rest.Resource
 
+@Resource(uri='/answer', formats=['json', 'xml'])
 class Answer extends Post {
 
     static belongsTo = [question: Question, user: User]

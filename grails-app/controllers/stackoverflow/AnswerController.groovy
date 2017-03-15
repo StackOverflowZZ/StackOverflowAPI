@@ -11,14 +11,25 @@ import grails.plugin.springsecurity.annotation.Secured
 @Transactional(readOnly = true)
 class AnswerController  extends RestfulController {
 
-    static allowedMethods = [show:"GET", addAnswer: "POST", upVote: "PUT", downVote: "PUT",
-                             update: "PUT", updateText: "PUT", delete: "DELETE"]
+    static allowedMethods = [addAnswer: "POST", upVote: "PUT", downVote: "PUT", updateText: "PUT"]
     static responseFormats = ['json', 'xml']
 
     AnswerController() {
-        super(Question)
+        super(Answer)
     }
 
+    // GET LIST
+    @Secured(['ROLE_ANONYMOUS'])
+    index(Integer max) {
+        if(!Feature.findByName("Answer").getEnable()) {
+            render status: SERVICE_UNAVAILABLE
+        }
+
+        params.max = Math.min(max ?: 10, 100)
+        respond Answer.list(params), model:[questionCount: Answer.count()]
+    }
+
+    // GET WITH ID
     @Secured(['ROLE_ANONYMOUS'])
     show() {
         if(!Feature.findByName("Answer").getEnable()) {
