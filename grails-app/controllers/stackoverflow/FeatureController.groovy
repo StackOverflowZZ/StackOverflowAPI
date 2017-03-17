@@ -1,46 +1,55 @@
 package stackoverflow
 
 import grails.plugin.springsecurity.annotation.Secured
+import grails.rest.RestfulController
 
 import static org.springframework.http.HttpStatus.*
 import grails.transaction.Transactional
 
 @Secured(['ROLE_ADMIN'])
 @Transactional(readOnly = true)
-class FeatureController {
+class FeatureController extends RestfulController {
 
-    static allowedMethods = [index:"GET", toggle: "PUT"]
+    static allowedMethods = [index:"GET"]
     static responseFormats = ['json', 'xml']
+	
+	
+    FeatureController() {
+        super(Feature)
+    }
 
+	def index(Integer max) {
+        params.max = Math.min(max ?: 10, 100)
+        respond Feature.list(params), model:[featureCount: Feature.count()]
+    }
+	
     @Transactional
-    toggle(Feature feature) {
+    def update() {
+		Feature feature = queryForResource(params.id)
+	 
         if (feature == null) {
             transactionStatus.setRollbackOnly()
             notFound()
             return
         }
 
+		feature.properties = getObjectToBind()
+		 
         if (feature.hasErrors()) {
             transactionStatus.setRollbackOnly()
             respond feature.errors, view:'edit'
             return
         }
 
-        feature.enable = !feature.enable
-        feature.save flush:true
-
+        updateResource feature
         request.withFormat {
-            form multipartForm {
-                flash.message = message(code: 'default.updated.message', args: [message(code: 'feature.label', default: 'Feature'), feature.id])
-                redirect controller: 'Feature', action: 'index'
+            '*' {
+                response.addHeader(HttpHeaders.LOCATION,
+                        grailsLinkGenerator.link( resource: this.controllerName, action: 'show',id: feature.id, absolute: true,
+                                namespace: hasProperty('namespace') ? this.namespace : null ))
+                respond feature, [status: CREATED]
             }
-            '*'{ respond feature, [status: OK] }
         }
-    }
-
-    def index(Integer max) {
-        params.max = Math.min(max ?: 10, 100)
-        respond Feature.list(params), model:[featureCount: Feature.count()]
     }
 
     @Secured(['ROLE_ANONYMOUS'])

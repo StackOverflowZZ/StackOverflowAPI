@@ -1,5 +1,8 @@
 package stackoverflow
 
+import grails.rest.Resource
+
+@Resource(uri='/feature', formats=['json', 'xml'])
 class Feature {
 
     String name
