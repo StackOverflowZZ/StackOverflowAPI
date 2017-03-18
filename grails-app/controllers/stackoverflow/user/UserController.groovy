@@ -103,10 +103,14 @@ class UserController extends RestfulController {
         user.properties = getObjectToBind()
 
         /* TODO : if not ADMIN and not the same user, don't update
-        if (user.username != (User) getAuthenticatedUser()) {
+        if (user.id != (User) getAuthenticatedUser().id) {
             render status: UNAUTHORIZED
             return
         }*/
+
+        /* TODO : check if roles are defined, and if they are, change roles
+            http://stackoverflow.com/questions/6409548/grails-spring-security-plugin-modify-logged-in-users-authorities
+        */
 
         if (user.hasErrors()) {
             transactionStatus.setRollbackOnly()
