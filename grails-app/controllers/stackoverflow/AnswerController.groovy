@@ -76,12 +76,14 @@ class AnswerController  extends RestfulController {
     }
 
     @Transactional
-    update(Answer answer) {
+    update() {
 
-        if(!Feature.findByName("Answer").getEnable()) {
+		if (!Feature.findByName("Answer").getEnable()) {
             render status: SERVICE_UNAVAILABLE
             return
         }
+
+        Answer answer = queryForResource(params.id)
 
         if (answer == null) {
             transactionStatus.setRollbackOnly()
@@ -91,15 +93,15 @@ class AnswerController  extends RestfulController {
 
         if (answer.hasErrors()) {
             transactionStatus.setRollbackOnly()
-            respond answer.errors, view:'edit'
+            respond answer.errors, view: 'edit'  // STATUS CODE 422
             return
         }
 
 		answer.edited = new Date()
-        answer.save flush:true
+        updateResource answer
 
         request.withFormat {
-            '*' {
+            '*'{
                 response.addHeader(HttpHeaders.LOCATION,
                         grailsLinkGenerator.link( resource: this.controllerName, action: 'show',id: answer.id, absolute: true,
                                 namespace: hasProperty('namespace') ? this.namespace : null ))
@@ -109,19 +111,19 @@ class AnswerController  extends RestfulController {
     }
 
     @Transactional
-    delete(Answer answer) {
+    delete() {
         if(!Feature.findByName("Answer").getEnable()) {
             render status: SERVICE_UNAVAILABLE
         }
 
+        def answer = queryForResource(params.id)
         if (answer == null) {
             transactionStatus.setRollbackOnly()
-            render status: NOT_FOUND
+            notFound()
             return
         }
 
-        def questionId = answer.question.id
-        answer.delete flush:true
+        deleteResource answer
 
         request.withFormat {
             '*'{ render status: NO_CONTENT } // NO CONTENT STATUS CODE
@@ -129,10 +131,13 @@ class AnswerController  extends RestfulController {
     }
 
     @Transactional
-    upVote(Answer answer){
-        if(!Feature.findByName("Answer").getEnable() || !Feature.findByName("Vote").getEnable()) {
+    upVote(){
+		if (!Feature.findByName("Answer").getEnable()) {
             render status: SERVICE_UNAVAILABLE
+            return
         }
+
+        Answer answer = queryForResource(params.id)
 
         if (answer == null) {
             transactionStatus.setRollbackOnly()
@@ -140,23 +145,13 @@ class AnswerController  extends RestfulController {
             return
         }
 
-        if (answer.hasErrors()) {
-            transactionStatus.setRollbackOnly()
-            respond answer.errors, view:'edit'
-            return
-        }
-
         answer.vote++
-
         answer.user.reputation += User.REPUTATION_COEF
         Badge.controlBadges(answer.user)
-        answer.user.save flush:true
 
-        answer.save flush:true
-
-
+        updateResource answer
         request.withFormat {
-            '*' {
+            '*'{
                 response.addHeader(HttpHeaders.LOCATION,
                         grailsLinkGenerator.link( resource: this.controllerName, action: 'show',id: answer.id, absolute: true,
                                 namespace: hasProperty('namespace') ? this.namespace : null ))
@@ -166,32 +161,27 @@ class AnswerController  extends RestfulController {
     }
 
     @Transactional
-    downVote(Answer answer) {
-        if(!Feature.findByName("Answer").getEnable() || !Feature.findByName("Vote").getEnable()) {
+    downVote() {
+       if (!Feature.findByName("Answer").getEnable()) {
             render status: SERVICE_UNAVAILABLE
-        }
-
-        if (answer == null) {
-            transactionStatus.setRollbackOnly()
-            render status: NOT_FOUND
             return
         }
 
-        if (answer.hasErrors()) {
+        Answer answer = queryForResource(params.id)
+
+        if (answer == null) {
             transactionStatus.setRollbackOnly()
-            respond answer.errors, view:'edit'
+            notFound()
             return
         }
 
         answer.vote--
-        answer.save flush:true
-
-        answer.user.reputation -= User.REPUTATION_COEF
+        answer.user.reputation += User.REPUTATION_COEF
         Badge.controlBadges(answer.user)
-        answer.user.save flush:true
 
+        updateResource answer
         request.withFormat {
-            '*' {
+            '*'{
                 response.addHeader(HttpHeaders.LOCATION,
                         grailsLinkGenerator.link( resource: this.controllerName, action: 'show',id: answer.id, absolute: true,
                                 namespace: hasProperty('namespace') ? this.namespace : null ))
