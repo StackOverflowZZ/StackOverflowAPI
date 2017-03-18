@@ -11,8 +11,7 @@ import grails.plugin.springsecurity.annotation.Secured
 @Transactional(readOnly = true)
 class CommentController extends RestfulController {
 
-    static allowedMethods = [show:"GET", addComment: "POST", upVote: "PUT", downVote: "PUT",
-                             update: "PUT", updateText: "PUT", delete: "DELETE"]
+    static allowedMethods = [upVote: "PUT", downVote: "PUT"]
 
     static responseFormats = ['json', 'xml']
 
@@ -42,9 +41,8 @@ class CommentController extends RestfulController {
         respond queryForResource(params.id)
     }
 
-    @Secured(['ROLE_USER'])
     @Transactional
-    def save() {
+    save() {
 
         if(!Feature.findByName("Comment").getEnable()) {
             render status: SERVICE_UNAVAILABLE
@@ -57,7 +55,7 @@ class CommentController extends RestfulController {
         comment.vote = 0
         comment.created = new Date()
         comment.user = (User) getAuthenticatedUser()
-
+		
         // Verify
         if (comment.hasErrors()) {
             transactionStatus.setRollbackOnly()

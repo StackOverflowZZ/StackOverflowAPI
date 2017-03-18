@@ -11,7 +11,7 @@ import grails.plugin.springsecurity.annotation.Secured
 @Transactional(readOnly = true)
 class AnswerController  extends RestfulController {
 
-    static allowedMethods = [addAnswer: "POST", upVote: "PUT", downVote: "PUT", updateText: "PUT"]
+    static allowedMethods = [upVote: "PUT", downVote: "PUT"]
     static responseFormats = ['json', 'xml']
 
     AnswerController() {
@@ -44,20 +44,14 @@ class AnswerController  extends RestfulController {
         if(!Feature.findByName("Answer").getEnable()) {
             render status: SERVICE_UNAVAILABLE
         }
+		
+		// Create resource
+        def answer = createResource()
 
-        Answer answer = new Answer(
-                text: params.text,
-                vote: 0,
-                created: new Date(),
-                question: Question.get(params.idQuestion),
-                user: (User)getAuthenticatedUser()
-        )
-
-        if (answer == null) {
-            transactionStatus.setRollbackOnly()
-            render status: NOT_FOUND
-            return
-        }
+        // Assign defaults
+        answer.vote = 0
+        answer.created = new Date()
+        answer.user = (User) getAuthenticatedUser()
 
         if (answer.hasErrors()) {
             transactionStatus.setRollbackOnly()
@@ -65,7 +59,8 @@ class AnswerController  extends RestfulController {
             return
         }
 
-        answer.save flush:true
+        // Save
+        saveResource answer
 
         Badge.controlBadges((User)getAuthenticatedUser())?.save()
 
@@ -75,7 +70,7 @@ class AnswerController  extends RestfulController {
                 response.addHeader(HttpHeaders.LOCATION,
                         grailsLinkGenerator.link( resource: this.controllerName, action: 'show',id: answer.id, absolute: true,
                                 namespace: hasProperty('namespace') ? this.namespace : null ))
-                respond answer, [status: CREATED]
+                respond answer, [status: CREATED, view:'show']
             }
         }
     }
