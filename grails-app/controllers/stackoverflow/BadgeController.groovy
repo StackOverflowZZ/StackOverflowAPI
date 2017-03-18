@@ -1,21 +1,37 @@
 package stackoverflow
 
+import grails.plugin.springsecurity.annotation.Secured
+import grails.rest.RestfulController
+
 import static org.springframework.http.HttpStatus.*
 import grails.transaction.Transactional
 
+@Secured(['ROLE_ANONYMOUS'])
 @Transactional(readOnly = true)
-class BadgeController {
+class BadgeController extends RestfulController {
 
-    static allowedMethods = [index: "GET", show:"GET"]
     static responseFormats = ['json', 'xml']
 
-    def show(Badge badge){
-        respond badge
+    BadgeController() {
+        super(Badge)
     }
 
     def index(Integer max) {
+
+        if(!Feature.findByName("Badge").getEnable()) {
+            render status: SERVICE_UNAVAILABLE
+        }
+
         params.max = Math.min(max ?: 10, 100)
         respond Badge.list(params), model:[badgeCount: Badge.count()]
+    }
+
+    def show(){
+        if(!Feature.findByName("Badge").getEnable()) {
+            render status: SERVICE_UNAVAILABLE
+        }
+
+        respond queryForResource(params.id)
     }
 
     protected void notFound() {

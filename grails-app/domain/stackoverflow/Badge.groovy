@@ -1,5 +1,8 @@
 package stackoverflow
 
+import grails.rest.Resource
+
+@Resource(uri='/badge', formats=['json', 'xml'])
 class Badge {
 
     String name
