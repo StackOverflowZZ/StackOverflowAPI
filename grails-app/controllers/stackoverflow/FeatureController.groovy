@@ -2,9 +2,10 @@ package stackoverflow
 
 import grails.plugin.springsecurity.annotation.Secured
 import grails.rest.RestfulController
+import grails.transaction.Transactional
+import grails.web.http.HttpHeaders
 
 import static org.springframework.http.HttpStatus.*
-import grails.transaction.Transactional
 
 @Secured(['ROLE_ADMIN'])
 @Transactional(readOnly = true)
@@ -47,7 +48,7 @@ class FeatureController extends RestfulController {
                 response.addHeader(HttpHeaders.LOCATION,
                         grailsLinkGenerator.link( resource: this.controllerName, action: 'show',id: feature.id, absolute: true,
                                 namespace: hasProperty('namespace') ? this.namespace : null ))
-                respond feature, [status: CREATED]
+                respond feature, [status: OK]
             }
         }
     }
