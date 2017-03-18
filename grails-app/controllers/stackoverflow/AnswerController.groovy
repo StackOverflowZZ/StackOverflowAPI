@@ -100,6 +100,7 @@ class AnswerController  extends RestfulController {
             return
         }
 
+		answer.edited = new Date()
         answer.save flush:true
 
         request.withFormat {

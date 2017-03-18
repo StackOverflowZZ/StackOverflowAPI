@@ -104,6 +104,7 @@ class CommentController extends RestfulController {
             return
         }
 
+		comment.edited = new Date()
         updateResource comment
 
         request.withFormat {
