@@ -16,7 +16,7 @@ import static org.springframework.http.HttpStatus.*
 @Transactional(readOnly = true)
 class UserController extends RestfulController {
 
-    static allowedMethods = [getUserByName: 'GET']
+    static allowedMethods = [getUserByName: 'GET', updateRole: 'PUT']
     static responseFormats = ['json', 'xml']
 
     UserController() {
@@ -96,6 +96,14 @@ class UserController extends RestfulController {
         User user = queryForResource(params.id)
         def connectedUser = (User) getAuthenticatedUser()
 
+        // If not ADMIN and not the same user, don't update
+        if(!SpringSecurityUtils.ifAllGranted('ROLE_ADMIN')
+                && user.id != connectedUser.id) {
+            transactionStatus.setRollbackOnly()
+            render status: FORBIDDEN
+            return
+        }
+
         if (user == null) {
             transactionStatus.setRollbackOnly()
             notFound()
@@ -103,14 +111,6 @@ class UserController extends RestfulController {
         }
 
         user.properties = getObjectToBind()
-
-        // If not ADMIN and not the same user, don't update
-        if(!SpringSecurityUtils.ifAllGranted('ROLE_ADMIN')
-                && user.id != connectedUser.id) {
-            transactionStatus.setRollbackOnly()
-            render status: UNAUTHORIZED
-            return
-        }
 
         /* TODO : check if roles are defined, and if they are, change roles
             http://stackoverflow.com/questions/6409548/grails-spring-security-plugin-modify-logged-in-users-authorities
@@ -123,6 +123,41 @@ class UserController extends RestfulController {
         }
 
         updateResource user
+
+        request.withFormat {
+            '*'{
+                response.addHeader(HttpHeaders.LOCATION,
+                        grailsLinkGenerator.link( resource: this.controllerName, action: 'show',id: user.id, absolute: true,
+                                namespace: hasProperty('namespace') ? this.namespace : null ))
+                respond user, [status: OK]
+            }
+        }
+    }
+
+    @Secured(['ROLE_ADMIN'])
+    @Transactional
+    def updateRole() {
+
+        if(!Feature.findByName("User").getEnable()) {
+            render status: SERVICE_UNAVAILABLE
+            return
+        }
+
+        User user = queryForResource(params.id)
+
+        if (user == null) {
+            transactionStatus.setRollbackOnly()
+            notFound()
+            return
+        }
+
+        if(request.JSON.role != null && request.JSON.role != "") {
+            def newRole = Role.findByAuthority(request.JSON.role)
+            if(newRole) {
+                UserRole.removeAll(user)
+                UserRole.create user, newRole
+            }
+        }
 
         request.withFormat {
             '*'{
