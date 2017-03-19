@@ -10,6 +10,5 @@ Back-end of the application StackOverflow
 # Deployment
 To install and run the application:
 
-- Install Groovy
 - Install Grails
 - Run the application with the command ```grails run-app```
