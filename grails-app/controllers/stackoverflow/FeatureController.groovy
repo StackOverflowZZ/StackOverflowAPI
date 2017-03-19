@@ -19,6 +19,7 @@ class FeatureController extends RestfulController {
         super(Feature)
     }
 
+	@Secured(['ROLE_ANONYMOUS'])
 	def index(Integer max) {
         params.max = Math.min(max ?: 10, 100)
         respond Feature.list(params), model:[featureCount: Feature.count()]
