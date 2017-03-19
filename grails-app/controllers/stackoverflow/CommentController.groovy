@@ -81,7 +81,7 @@ class CommentController extends RestfulController {
     }
 
     @Transactional
-    def update() {
+    update() {
 
         if (!Feature.findByName("Comment").getEnable()) {
             render status: SERVICE_UNAVAILABLE
@@ -95,6 +95,8 @@ class CommentController extends RestfulController {
             notFound()
             return
         }
+		
+		comment.properties = getObjectToBind()
 
         if (comment.hasErrors()) {
             transactionStatus.setRollbackOnly()

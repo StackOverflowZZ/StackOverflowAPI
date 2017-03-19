@@ -90,6 +90,8 @@ class AnswerController  extends RestfulController {
             notFound()
             return
         }
+		
+		answer.properties = getObjectToBind()
 
         if (answer.hasErrors()) {
             transactionStatus.setRollbackOnly()
