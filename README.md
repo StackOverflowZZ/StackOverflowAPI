@@ -13,5 +13,3 @@ To install and run the application:
 - Install Groovy
 - Install Grails
 - Run the application with the command ```grails run-app```
-
-Documentation to read : https://docs.grails.org/latest/guide/webServices.html
