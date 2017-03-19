@@ -1,5 +1,6 @@
 package stackoverflow.user
 
+import grails.plugin.springsecurity.SpringSecurityUtils
 import grails.plugin.springsecurity.annotation.Secured
 import grails.rest.RestfulController
 import grails.transaction.Transactional
@@ -93,6 +94,7 @@ class UserController extends RestfulController {
         }
 
         User user = queryForResource(params.id)
+        def connectedUser = (User) getAuthenticatedUser()
 
         if (user == null) {
             transactionStatus.setRollbackOnly()
@@ -102,11 +104,13 @@ class UserController extends RestfulController {
 
         user.properties = getObjectToBind()
 
-        /* TODO : if not ADMIN and not the same user, don't update
-        if (user.id != (User) getAuthenticatedUser().id) {
+        // If not ADMIN and not the same user, don't update
+        if(!SpringSecurityUtils.ifAllGranted('ROLE_ADMIN')
+                && user.id != connectedUser.id) {
+            transactionStatus.setRollbackOnly()
             render status: UNAUTHORIZED
             return
-        }*/
+        }
 
         /* TODO : check if roles are defined, and if they are, change roles
             http://stackoverflow.com/questions/6409548/grails-spring-security-plugin-modify-logged-in-users-authorities
